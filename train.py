@@ -712,6 +712,8 @@ def training_loop(
                     random_steps = init_time_stamp_range[torch.randint(len(init_time_stamp_range), (args.batch_size_train,))]
                     #random_steps = torch.tensor(init_time_stamp_range[ torch.randperm(len(init_time_stamp_range))[:args.batch_size_train] ] ).to(device)
                     #import pdb; pdb.set_trace()
+                    if ep == (last_epoch_no+1):
+                        p.print(f"random_samples --> {random_steps}" )
                     xy, xy_t = create_data(xy, xy_t, random_steps, t_pred_steps, horizon)
                     x = xy[..., time_stamps[0]:time_stamps[1] ]
                     x_t = xy_t[..., time_stamps[0]:time_stamps[1] ]
@@ -733,11 +735,16 @@ def training_loop(
                 with torch.no_grad():
                     
                     for t in range(horizon-horizon_grad):
+
+                        if args.time_sampling_prediction == "constant":
+                            y = xy[..., time_stamps[s+t+1]:time_stamps[s+t+2]]
+                            y_t = xy_t[..., time_stamps[s+t+1]:time_stamps[s+t+2]]
+
+                        elif args.time_sampling_prediction == "random":
+                            y = xy[..., time_stamps[t+1]:time_stamps[t+2]]
+                            y_t = xy_t[..., time_stamps[t+1]:time_stamps[t+2]]
+
                         #import pdb; pdb.set_trace()
-                        y = xy[..., time_stamps[s+t+1]:time_stamps[s+t+2]]
-                        y_t = xy_t[..., time_stamps[s+t+1]:time_stamps[t+2]]
-
-
 
                         if model_mode.startswith("constant_dt"):
                             #import pdb; pdb.set_trace()
@@ -750,14 +757,22 @@ def training_loop(
                                 out = model( torch.cat((x, x_t), dim=-1 ) ).to(device)  #CONCAT
                         
 
-                        if ep == (last_epoch_no+1):
+                        if ep == (last_epoch_no+1) :
                             p.print("\n")
-                            p.print(f"x --> {time_stamps[s+t],time_stamps[s+t+1]}" )
-                            p.print(f"x_t --> {x_t[:3,0,:5]}")
-                            p.print(f"y --> {time_stamps[s+t+1],time_stamps[s+t+2]} ")
-                            p.print(f"y_t --> {y_t[:3,0,:5]} ")
-                            p.print(f"f_pass_weights[{a_l}] ->, {f_pass_weights[a_l]}")
-                            p.print(f"loss ->, {loss}")
+                            if args.time_sampling_prediction == "constant":
+                                p.print(f"x --> {time_stamps[s+t],time_stamps[s+t+1]}" )
+                                p.print(f"x_t --> {x_t[:3,0,:5]}")
+                                p.print(f"y --> {time_stamps[s+t+1],time_stamps[s+t+2]} ")
+                                p.print(f"y_t --> {y_t[:3,0,:5]} ")
+                                p.print(f"f_pass_weights[{a_l}] ->, {f_pass_weights[a_l]}")
+                                p.print(f"loss ->, {loss}")
+                            elif args.time_sampling_prediction == "random":
+                                p.print(f"x --> {time_stamps[t],time_stamps[t+1]}" )
+                                p.print(f"x_t --> {x_t[:3,0,:5]}")
+                                p.print(f"y --> {time_stamps[t+1],time_stamps[t+2]} ")
+                                p.print(f"y_t --> {y_t[:3,0,:5]} ")
+                                p.print(f"f_pass_weights[{a_l}] ->, {f_pass_weights[a_l]}")
+                                p.print(f"loss ->, {loss}")
 
                         a_l += 1
 
@@ -773,8 +788,18 @@ def training_loop(
                 #import pdb; pdb.set_trace()
                 for t in range(horizon-horizon_grad, horizon):
                     #import pdb; pdb.set_trace()
-                    y = xy[..., time_stamps[s+t+1]:time_stamps[s+t+2]]
-                    y_t = xy_t[..., time_stamps[s+t+1]:time_stamps[s+t+2]]
+                    #y = xy[..., time_stamps[s+t+1]:time_stamps[s+t+2]]
+                    #y_t = xy_t[..., time_stamps[s+t+1]:time_stamps[s+t+2]]
+
+                    if args.time_sampling_prediction == "constant":
+                        y = xy[..., time_stamps[s+t+1]:time_stamps[s+t+2]]
+                        y_t = xy_t[..., time_stamps[s+t+1]:time_stamps[s+t+2]]
+
+                    elif args.time_sampling_prediction == "random":
+                        y = xy[..., time_stamps[t+1]:time_stamps[t+2]]
+                        y_t = xy_t[..., time_stamps[t+1]:time_stamps[t+2]]
+                    
+                    #import pdb; pdb.set_trace()
 
 
                     if model_mode.startswith("constant_dt"):
@@ -798,12 +823,20 @@ def training_loop(
 
                     if ep == (last_epoch_no+1) :
                         p.print("\n")
-                        p.print(f"x --> {time_stamps[s+t],time_stamps[s+t+1]}" )
-                        p.print(f"x_t --> {x_t[:3,0,:5]}")
-                        p.print(f"y --> {time_stamps[s+t+1],time_stamps[s+t+2]} ")
-                        p.print(f"y_t --> {y_t[:3,0,:5]} ")
-                        p.print(f"f_pass_weights[{a_l}] ->, {f_pass_weights[a_l]}")
-                        p.print(f"loss ->, {loss}")
+                        if args.time_sampling_prediction == "constant":
+                            p.print(f"x --> {time_stamps[s+t],time_stamps[s+t+1]}" )
+                            p.print(f"x_t --> {x_t[:3,0,:5]}")
+                            p.print(f"y --> {time_stamps[s+t+1],time_stamps[s+t+2]} ")
+                            p.print(f"y_t --> {y_t[:3,0,:5]} ")
+                            p.print(f"f_pass_weights[{a_l}] ->, {f_pass_weights[a_l]}")
+                            p.print(f"loss ->, {loss}")
+                        elif args.time_sampling_prediction == "random":
+                            p.print(f"x --> {time_stamps[t],time_stamps[t+1]}" )
+                            p.print(f"x_t --> {x_t[:3,0,:5]}")
+                            p.print(f"y --> {time_stamps[t+1],time_stamps[t+2]} ")
+                            p.print(f"y_t --> {y_t[:3,0,:5]} ")
+                            p.print(f"f_pass_weights[{a_l}] ->, {f_pass_weights[a_l]}")
+                            p.print(f"loss ->, {loss}")
 
                     a_l += 1
 
@@ -912,7 +945,7 @@ def training_protocol(
     if args.time_sampling_prediction == "constant":
         t_iteration = len(time_steps)-args.horizon - 1
     elif args.time_sampling_prediction == "random":
-        t_iteration = args.total_t_range
+        t_iteration = 1 #args.total_t_range
     else:
         raise TypeError("Specify time_sampling_prediciton")
     
