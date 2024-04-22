@@ -1,2 +1,2 @@
 # constant_auto
-Explore constant time stepping of partial differential equations
+Explore constant time stepping autoregressive methods for solving time-dependent partial differential equations
