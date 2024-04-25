@@ -139,20 +139,22 @@ if args.mode.startswith("train"):
         if args.sheduler_type[proto].startswith("steplr"):
             scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.sheduler_step[proto], gamma=args.sheduler_gamma[proto])
 
-        if proto == 0 and args.new_training == False :
+        if args.new_training == False and args.initialise_optimiser[proto] == False:
             p.print("Loading optimizer last state")
             optimizer.load_state_dict(saved_epochs[-1]["optimizer"])
         else:
             pass
 
-        if  proto > 0 and args.initialise_optimiser[proto] == False:
-            p.print("Loading optimizer last state")
-            optimizer.load_state_dict(saved_epochs[-1]["optimizer"])
-        else:
-            pass
+        # if  proto > 0 and args.initialise_optimiser[proto] == False:
+        #     p.print("Loading optimizer last state")
+        #     optimizer.load_state_dict(saved_epochs[-1]["optimizer"])
+        # else:
+        #     pass
 
         if args.loss_train_type.startswith("l2"):
             criterion = LpLoss(size_average=False, reduction=False)
+        elif args.loss_train_type.startswith("mse"):
+            criterion = torch.nn.MSELoss(reduction="none")
         else:
             pass
         

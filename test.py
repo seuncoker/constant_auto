@@ -140,7 +140,7 @@ def roll_out_test_during_training( args, model, loader, timestamps):
                 else:
                     train_prediction = torch.cat((train_prediction,pred), dim=0)
 
-    test_l2_full = torch.mean((train_prediction-train_actual)**2 )
+    test_l2_full = torch.mean((train_prediction-train_actual)**2, dim=[0,1] ).sum()
 
     return test_l2_full, train_prediction, train_actual
 
